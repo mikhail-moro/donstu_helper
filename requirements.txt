@@ -1,0 +1,8 @@
+Flask~=2.3.2
+pandas~=2.0.3
+nltk~=3.8.1
+pymorphy2~=0.9.1
+scikit-learn~=1.2.2
+vosk~=0.3.45
+pydub~=0.25.1
+requests~=2.31.0

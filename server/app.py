@@ -1,10 +1,9 @@
-import os
-
-from flask import Flask, request, jsonify, redirect, render_template
+from flask import Flask, request, make_response
 from analyze.analyzer import Analyzer
 from analyze.speech2text import Recognizer
 from donstu_api.requests import UsersSessionsPool, ResponseData
-from server.uploads.voice import voice
+
+SUPPORTED_AUDIO_EXTENSIONS = ['mp4', 'mp3', 'wav', 'wave', 'ogg']  # Может можно и другие, ещё не проверенно
 
 lateinit_request_max_content_length: int
 lateinit_text_data_max_length: int
@@ -14,43 +13,24 @@ lateinit_text_analyzer: Analyzer
 
 app = Flask(__name__)
 
-SUPPORTED_AUDIO_EXTENSIONS = ['mp4', 'mp3', 'wav', 'wave', 'ogg']  # Может можно и другие, ещё не проверенно
-UPLOAD_FOLDER = 'uploads/'
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.mkdir(UPLOAD_FOLDER)
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-
-@app.route('/', methods=['POST', 'GET'])
-def starter():
-    return render_template('homepage.html')
-
-
-@app.route('/uploadfile', methods=['GET'])
-def download():
-    voice()
-    return redirect('/obrab')
-
 
 @app.route('/analyze_text', methods=['POST'])
 def analyze_text():
     if 'Authorization' not in request.headers:
-        return 401
+        return "", 401
 
     token = request.headers['Authorization']
 
     if token == '' or token == 'Bearer ' or token == 'Bearer':
-        return 401
+        return "", 401
 
     if request.content_type != 'application/json':
-        return 415
+        return "", 415
 
-    if "data" not in request.json:
+    if "text" not in request.json:
         return ResponseData(False, "Неправильный формат запроса", None).to_json()
 
-    text_data = request.json["data"]
+    text_data = request.json["text"]
 
     if not (0 < len(text_data) < lateinit_text_data_max_length):
         return ResponseData(False, "Запрос либо пустой, либо слишком длинный", None).to_json()
@@ -70,18 +50,19 @@ def analyze_text():
 @app.route('/analyze_audio', methods=['POST'])
 def analyze_audio():
     if 'Authorization' not in request.headers:
-        return 401
+        return "", 401
 
     token = request.headers['Authorization']
 
     if token == '' or token == 'Bearer ' or token == 'Bearer':
-        return 401
+        return "", 401
 
     if not request.content_type.startswith('audio'):
-        return 415
+        return "", 415
 
     if not any([ext in request.content_type for ext in SUPPORTED_AUDIO_EXTENSIONS]):
-        return 415
+        print(request.content_type)
+        return "", 415
 
     text_data = lateinit_speech_recognizer.recognize(request.data)
 
@@ -101,23 +82,13 @@ def analyze_audio():
             return user_session.get_marks().to_json()
 
 
-@app.route('/raspisanie', methods=['GET'])
-def raspisanie():
-    return "Raspisanie"
-
-
-@app.route('/marks', methods=['GET'])
-def marks():
-    return "Your marks: "
-
-
 def run_server(
-    request_max_content_length: int,
-    text_data_max_length: int,
-    session_reset_time: int,
-    max_request_retries: int,
-    speech_recognizer: Recognizer,
-    text_analyzer: Analyzer
+        request_max_content_length: int,
+        text_data_max_length: int,
+        session_reset_time: int,
+        max_request_retries: int,
+        speech_recognizer: Recognizer,
+        text_analyzer: Analyzer
 ):
     """
     Запуск сервиса

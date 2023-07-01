@@ -5,6 +5,8 @@ import time
 import types
 
 from threading import Thread
+
+import requests
 from flask import jsonify
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -12,7 +14,6 @@ from donstu_api.parse_utils import parsers
 
 
 API_PREFIX = "https://lk.donstu.ru/api"
-AUTH_URL = "https://lk.donstu.ru/api/tokenauth"
 RASP_URL = "https://lk.donstu.ru/api/RaspManager"
 MARKS_URL = "https://lk.donstu.ru/api/students/ActiveModulesList"
 
@@ -82,19 +83,9 @@ class UserSession(Session):
             max_retries: int = 4
     ):
         super().__init__()
+
         self.mount(API_PREFIX, adapter=HTTPAdapter(max_retries=max_retries))
-        self.headers["Authorization"] = f"Bearer {token}"
-
-    # ПОКА НЕ ИСПОЛЬЗУЕТСЯ
-    @_api_request
-    def get_token(self, login: str, password: str):
-        self._last_use_timestamp = time.time()
-
-        return self.post(
-            AUTH_URL,
-            json={"userName": login, "password": password},
-            headers={'Content-Type': 'application/json'}
-        )
+        self.headers["Authorization"] = token
 
     @_api_request
     def get_rasp_today(self):
@@ -180,6 +171,9 @@ class UsersSessionsPool:
                 for key, value in list(sessions.items()):
                     if old_time > value._last_use_timestamp:
                         del sessions[key]
+
+    def temporal_auth_session(self) -> UserSession:
+        return UserSession(None, self.requests_max_retries)
 
     def __contains__(self, item):
         return item in self._sessions.keys()

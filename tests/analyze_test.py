@@ -1,24 +1,39 @@
 import unittest
 
+from analyze.analyzer import VectorizeAnalyzer
 from analyze.speech2text import Recognizer
 
 
-TEST_RECORD_PATH = "test_record.mp3"
-TEST_RECORD_TEXT = "расписание я хочу хочу списание и расписание я хочу хочу от списания е пятьдесят подписано по подписи"
+TEST_RECORD_PATH = "test_record.m4a"
+TEST_RECORD_TEXT = "мы расписание на сегодня пожалуйста сегодня"
+TEST_RECORD_CLASS = 0
 
 
-class TextAnalyzeTest(unittest.TestCase):
+recognizer = Recognizer(
+    model_path="..\\recognize_model\\vosk-model-small-ru-0.22",
+)
+analyzer = VectorizeAnalyzer(
+    vectorize_data_path="..\\vectorize_data.xlsx"
+)
+
+
+class TextRecognizeTest(unittest.TestCase):
     def test_speech2text(self):
-        speech2text = Recognizer(
-            model_path="../analyze/for_speech2text/recognize_model/vosk-model-ru-0.22",
-            model="small"
-        )
-
         with open(TEST_RECORD_PATH, 'rb') as bin_data:
-            result = speech2text.recognize(bytes(bin_data))
+            result = recognizer.recognize(bin_data.read())
 
-        print(result['text'])
-        self.assertEqual(result['text'], TEST_RECORD_TEXT)
+        print(result)
+        self.assertEqual(result, TEST_RECORD_TEXT)
+
+
+class AnalyzeTest(unittest.TestCase):
+    def test_analyze(self):
+        with open(TEST_RECORD_PATH, 'rb') as bin_data:
+            result = recognizer.recognize(bin_data.read())
+        analyze = analyzer.get_result(result)
+
+        print(analyze)
+        self.assertEqual(analyze, TEST_RECORD_CLASS)
 
 
 if __name__ == "__main__":

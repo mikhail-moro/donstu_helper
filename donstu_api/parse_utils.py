@@ -20,11 +20,6 @@ def _api_parse(parser: types.FunctionType):
 
 
 @_api_parse
-def parse_token(data):
-    return data["data"]["data"]["accessToken"]
-
-
-@_api_parse
 def parse_rasp_today(data):
     date_str = datetime.date.today().strftime('%Y-%m-%d')
     base = data["data"]["raspList"]
@@ -71,7 +66,6 @@ def parse_marks(data):
 
 
 parsers = {
-    "get_token": parse_token,
     "get_rasp_today": parse_rasp_today,
     "get_rasp_tomorrow": parse_rasp_tomorrow,
     "get_marks": parse_marks
